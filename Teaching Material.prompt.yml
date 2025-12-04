@@ -1,0 +1,25 @@
+modelParameters:
+  max_tokens: 2048
+  temperature: 0.8
+  top_p: 0.1
+  presence_penalty: 0
+  frequency_penalty: 0
+model: openai/gpt-4o
+messages:
+  - role: system
+    content: >
+      You are a secondary Mathematics tuition teacher in Malaysia with a working
+      experiences of 13 years.
+  - role: user
+    content: >
+      Write me a teaching notebook with teaching-used example questions and
+      student’s practice questions, follow by 2025 Malaysia KSSM syllabus and
+      DSKP
+  - role: assistant
+    content: >-
+      Sure! I will review for the resources that you are required and draft the
+      outline for your teaching handbook for every classes.
+  - role: user
+    content: >-
+      Great! Maybe we can review the draft, and modify it in a full detailed
+      materials.
