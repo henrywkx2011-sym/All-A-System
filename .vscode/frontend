@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All-A Education Director Portal</title>
+    
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Babel (To translate JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 4. Lucide Icons (Vanilla version for CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      /* Custom scrollbar for a cleaner look */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #f1f1f1; }
+      ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+      
+      /* Tap highlight fix for mobile */
+      button { -webkit-tap-highlight-color: transparent; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      // --- SETUP FOR CDN ENVIRONMENT ---
+      const { useState, useEffect, useRef } = React;
+      
+      // IMPROVED ICON COMPONENT (DOM-BASED)
+      // This version uses Lucide's own createElement API to generate the SVG.
+      const Icon = ({ name, size = 24, className = "" }) => {
+        const ref = useRef(null);
+
+        useEffect(() => {
+          if (!window.lucide) return;
+
+          const camelName = name
+            .split('-')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+
+          const iconDef = window.lucide.icons ? window.lucide.icons[camelName] : null;
+
+          if (iconDef && ref.current) {
+            const svgElement = window.lucide.createElement(iconDef);
+            svgElement.setAttribute('width', size);
+            svgElement.setAttribute('height', size);
+            
+            if (className) {
+              const existingClass = svgElement.getAttribute('class') || '';
+              svgElement.setAttribute('class', `${existingClass} ${className}`);
+            }
+            
+            svgElement.setAttribute('stroke-width', '2');
+            ref.current.innerHTML = '';
+            ref.current.appendChild(svgElement);
+          }
+        }, [name, size, className]);
+
+        return <span ref={ref} className="inline-flex items-center justify-center" />;
+      };
+
+      // --- LOGO COMPONENT WITH FALLBACK ---
+      const Logo = () => {
+        const [imgError, setImgError] = useState(false);
+        // Replace this URL with your hosted image link when ready
+        const userImageSrc = "20240309_082937000_iOS.jpg";
+
+        if (imgError) {
+          // Fallback UI if image fails to load
+          return (
+            <div className="w-10 h-10 rounded-lg bg-yellow-400 flex items-center justify-center border border-yellow-500 shadow-sm text-red-600 font-bold text-xl select-none">
+              A
+            </div>
+          );
+        }
+
+        return (
+          <img 
+            src={userImageSrc} 
+            alt="All-A Logo" 
+            className="w-10 h-10 rounded-lg object-contain bg-white border border-gray-200"
+            onError={() => setImgError(true)}
+          />
+        );
+      };
+
+      // Icon Mappings
+      const LayoutDashboard = (props) => <Icon name="layout-dashboard" {...props} />;
+      const Users = (props) => <Icon name="users" {...props} />;
+      const FileText = (props) => <Icon name="file-text" {...props} />;
+      const FolderOpen = (props) => <Icon name="folder-open" {...props} />;
+      const DollarSign = (props) => <Icon name="dollar-sign" {...props} />;
+      const Settings = (props) => <Icon name="settings" {...props} />;
+      const Plus = (props) => <Icon name="plus" {...props} />;
+      const Search = (props) => <Icon name="search" {...props} />;
+      const Bell = (props) => <Icon name="bell" {...props} />;
+      const CheckCircle = (props) => <Icon name="check-circle" {...props} />;
+      const XCircle = (props) => <Icon name="x-circle" {...props} />;
+      const MenuIcon = (props) => <Icon name="menu" {...props} />;
+      const XIcon = (props) => <Icon name="x" {...props} />;
+      const ExternalLink = (props) => <Icon name="external-link" {...props} />;
+      const RefreshCw = (props) => <Icon name="refresh-cw" {...props} />;
+      const Download = (props) => <Icon name="download" {...props} />;
+
+      // --- MOCK DATA ---
+      const MOCK_STUDENTS = [
+        { id: 'S001', name: 'Ali bin Abu', level: 'Form 5', subject: 'SPM Add Maths', status: 'Active', phone: '+6012-3456789', lastPayment: 'Oct 2025' },
+        { id: 'S002', name: 'Sarah Lim', level: 'Year 11', subject: 'IGCSE Physics', status: 'Active', phone: '+6017-8889999', lastPayment: 'Oct 2025' },
+        { id: 'S003', name: 'Muthu Kumar', level: 'Form 4', subject: 'SPM Modern Maths', status: 'Pending', phone: '+6019-2223333', lastPayment: 'Sep 2025' },
+        { id: 'S004', name: 'Nurul Huda', level: 'Form 5', subject: 'SPM Add Maths', status: 'Active', phone: '+6013-5556666', lastPayment: 'Oct 2025' },
+        { id: 'S005', name: 'Jason Tan', level: 'Form 3', subject: 'PT3 Maths', status: 'Inactive', phone: '+6016-7778888', lastPayment: 'Aug 2025' },
+      ];
+
+      const MOCK_FEES = [
+        { id: 'T1001', student: 'Ali bin Abu', month: 'October 2025', amount: 120, date: '2025-10-01', method: 'Touch n Go', status: 'Verified' },
+        { id: 'T1002', student: 'Sarah Lim', month: 'October 2025', amount: 150, date: '2025-10-02', method: 'Online Transfer', status: 'Verified' },
+        { id: 'T1003', student: 'Muthu Kumar', month: 'October 2025', amount: 120, date: '-', method: '-', status: 'Unpaid' },
+      ];
+
+      const MOCK_DRIVE_FILES = [
+        { id: 'F01', name: 'SPM Add Maths - Chapter 1 Functions.pdf', type: 'PDF', date: '2025-09-01' },
+        { id: 'F02', name: 'IGCSE Physics - Past Year 2024.pdf', type: 'PDF', date: '2025-09-15' },
+        { id: 'F03', name: 'Form 4 Modern Maths - Module 3.docx', type: 'DOC', date: '2025-10-01' },
+        { id: 'F04', name: 'Attendance_Sheet_2025.xlsx', type: 'SHEET', date: '2025-10-22' },
+      ];
+
+      // --- COMPONENTS ---
+
+      const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+        <button 
+          onClick={onClick}
+          className={`w-full flex items-center space-x-3 px-6 py-4 transition-colors text-left ${
+            active 
+              ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700' 
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+        >
+          <Icon size={20} />
+          <span className="font-medium">{label}</span>
+        </button>
+      );
+
+      const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between">
+          <div>
+            <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
+            <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+            <p className={`text-xs mt-2 ${subtext.includes('+') ? 'text-green-600' : 'text-gray-400'}`}>
+              {subtext}
+            </p>
+          </div>
+          <div className={`p-3 rounded-lg ${color}`}>
+            <Icon size={24} className="text-white" />
+          </div>
+        </div>
+      );
+
+      const StatusBadge = ({ status }) => {
+        const styles = {
+          Active: 'bg-green-100 text-green-700',
+          Verified: 'bg-green-100 text-green-700',
+          Pending: 'bg-yellow-100 text-yellow-700',
+          Unpaid: 'bg-red-100 text-red-700',
+          Inactive: 'bg-gray-100 text-gray-600',
+        };
+        return (
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100'}`}>
+            {status}
+          </span>
+        );
+      };
+
+      // --- MAIN APPLICATION ---
+
+      function TuitionManager() {
+        const [activeTab, setActiveTab] = useState('dashboard');
+        const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const [students, setStudents] = useState(MOCK_STUDENTS);
+        const [fees, setFees] = useState(MOCK_FEES);
+
+        useEffect(() => {
+          if (typeof google !== 'undefined' && google.script) {
+            refreshData();
+          }
+        }, []);
+
+        const refreshData = () => {
+          setIsLoading(true);
+          if (typeof google !== 'undefined' && google.script) {
+            google.script.run
+              .withSuccessHandler((data) => {
+                 console.log("Data fetched:", data); 
+                 setIsLoading(false);
+              })
+              .withFailureHandler((error) => {
+                 console.error("Error:", error);
+                 setIsLoading(false);
+              })
+              .getDashboardData();
+          } else {
+            setTimeout(() => setIsLoading(false), 1200);
+          }
+        };
+
+        const handlePlaceholderClick = (action) => {
+          alert(`Function "${action}" triggered! \n(This will connect to your Google Drive/Form in the final version)`);
+        };
+
+        const renderContent = () => {
+          switch(activeTab) {
+            case 'students':
+              return (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-2xl font-bold text-gray-800">Student Database</h2>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <button 
+                        onClick={() => handlePlaceholderClick("Open Registration Form")}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                      >
+                        <ExternalLink size={16} />
+                        <span>Open Reg Form</span>
+                      </button>
+                      <button 
+                          onClick={refreshData}
+                          className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                        <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                        <span className="hidden sm:inline">Sync Sheet</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                          <tr>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Student Name</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Level / Subject</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Status</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Last Payment</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Contact</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {students.map((student) => (
+                            <tr key={student.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => handlePlaceholderClick(`View Profile: ${student.name}`)}>
+                              <td className="p-4 font-medium text-gray-900 whitespace-nowrap">{student.name}</td>
+                              <td className="p-4 text-gray-600 whitespace-nowrap">{student.level} • {student.subject}</td>
+                              <td className="p-4 whitespace-nowrap"><StatusBadge status={student.status} /></td>
+                              <td className="p-4 text-gray-600 whitespace-nowrap">{student.lastPayment}</td>
+                              <td className="p-4 text-gray-600 font-mono text-sm whitespace-nowrap">{student.phone}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            
+            case 'fees':
+              return (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-gray-800">Fee Collection</h2>
+                    <button 
+                      onClick={() => handlePlaceholderClick("Manual Fee Entry")}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                      <Plus size={16} />
+                      <span className="hidden sm:inline">Manual Entry</span>
+                      <span className="sm:hidden">Add</span>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                      <p className="text-green-600 text-sm font-medium">Collected (Oct)</p>
+                      <p className="text-2xl font-bold text-green-800">RM 270.00</p>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+                      <p className="text-red-600 text-sm font-medium">Outstanding (Oct)</p>
+                      <p className="text-2xl font-bold text-red-800">RM 120.00</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                     <div className="overflow-x-auto">
+                       <table className="w-full text-left">
+                          <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                              <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Student</th>
+                              <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Amount</th>
+                              <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Date</th>
+                              <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Method</th>
+                              <th className="p-4 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {fees.map((fee) => (
+                              <tr key={fee.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => handlePlaceholderClick(`View Receipt for ${fee.student}`)}>
+                                <td className="p-4 font-medium text-gray-900 whitespace-nowrap">{fee.student}</td>
+                                <td className="p-4 text-gray-900 font-bold whitespace-nowrap">RM {fee.amount}</td>
+                                <td className="p-4 text-gray-600 whitespace-nowrap">{fee.date}</td>
+                                <td className="p-4 text-gray-600 whitespace-nowrap">{fee.method}</td>
+                                <td className="p-4 whitespace-nowrap"><StatusBadge status={fee.status} /></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                     </div>
+                  </div>
+                </div>
+              );
+
+            case 'materials':
+              return (
+                <div className="space-y-6">
+                  <h2 className="text-2xl font-bold text-gray-800">All-A Drive Materials</h2>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+                       <div className="bg-blue-100 p-3 rounded-lg">
+                         <FolderOpen className="text-blue-600" size={24} />
+                       </div>
+                       <div>
+                         <h3 className="font-bold text-lg">My Drive / All-A / 2025 Materials</h3>
+                         <p className="text-gray-500 text-sm">Synced directly from your Google Drive</p>
+                       </div>
+                    </div>
+                    
+                    <div className="grid gap-3">
+                      {MOCK_DRIVE_FILES.map((file) => (
+                        <div key={file.id} 
+                             onClick={() => handlePlaceholderClick(`Download ${file.name}`)}
+                             className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg group transition cursor-pointer border border-transparent hover:border-gray-200">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="flex-shrink-0">
+                              <FileText className="text-gray-400 group-hover:text-blue-500" size={20} />
+                            </div>
+                            <span className="text-gray-700 group-hover:text-gray-900 font-medium truncate">{file.name}</span>
+                          </div>
+                          <div className="flex items-center gap-4 flex-shrink-0">
+                            <span className="text-xs text-gray-400 hidden sm:inline">{file.date}</span>
+                            <button className="p-2 hover:bg-gray-200 rounded-full text-gray-500">
+                              <Download size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+
+            case 'dashboard':
+            default:
+              return (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">Welcome back, Director!</h2>
+                      <p className="text-gray-500">Overview for All-A Education • October 2025</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="text-xs text-gray-400">Last synced: Just now</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard title="Total Students" value="48" subtext="+3 this month" icon={Users} color="bg-blue-500" />
+                    <StatCard title="Pending Fees" value="RM 850" subtext="5 students unpaid" icon={DollarSign} color="bg-red-500" />
+                    <StatCard title="Active Classes" value="12" subtext="2 today" icon={LayoutDashboard} color="bg-purple-500" />
+                    <StatCard title="New Materials" value="8" subtext="Files added this week" icon={FolderOpen} color="bg-yellow-500" />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                      <h3 className="font-bold text-lg mb-4 text-gray-800">Recent Registrations</h3>
+                      <div className="space-y-4">
+                        {students.slice(0, 3).map((s) => (
+                          <div key={s.id} className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                {s.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{s.name}</p>
+                                <p className="text-xs text-gray-500">{s.subject}</p>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400">Via Google Form</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                      <h3 className="font-bold text-lg mb-4 text-gray-800">Quick Actions</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button 
+                          onClick={() => handlePlaceholderClick("Send Payment Reminder")}
+                          className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition text-center flex flex-col items-center gap-2"
+                        >
+                          <ExternalLink size={20} className="text-blue-600" />
+                          <span className="text-sm font-medium text-gray-700">Send Payment Reminder</span>
+                        </button>
+                        <button 
+                          onClick={() => handlePlaceholderClick("Create New Class")}
+                          className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition text-center flex flex-col items-center gap-2"
+                        >
+                          <Plus size={20} className="text-green-600" />
+                          <span className="text-sm font-medium text-gray-700">Create New Class</span>
+                        </button>
+                        <button 
+                          onClick={() => handlePlaceholderClick("Upload Exam Paper")}
+                          className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition text-center flex flex-col items-center gap-2"
+                        >
+                          <FileText size={20} className="text-purple-600" />
+                          <span className="text-sm font-medium text-gray-700">Upload Exam Paper</span>
+                        </button>
+                        <button 
+                          onClick={() => handlePlaceholderClick("Manage Forms")}
+                          className="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition text-center flex flex-col items-center gap-2"
+                        >
+                          <Settings size={20} className="text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Manage Forms</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+          }
+        };
+
+        return (
+          <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
+            {/* Mobile Menu Overlay */}
+            {isMobileMenuOpen && (
+              <div 
+                className="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity" 
+                onClick={() => setIsMobileMenuOpen(false)} 
+              />
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+              fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-out shadow-xl md:shadow-none
+              ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
+              <div className="h-full flex flex-col">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {/* UPDATED: LOGO WITH FALLBACK */}
+                    <Logo />
+                    <div>
+                      <h1 className="font-bold text-lg leading-tight">All-A Edu</h1>
+                      <p className="text-xs text-gray-500">Director Portal</p>
+                    </div>
+                  </div>
+                  <button className="md:hidden p-1 text-gray-400 hover:text-gray-600" onClick={() => setIsMobileMenuOpen(false)}>
+                    <XIcon size={24} />
+                  </button>
+                </div>
+
+                <nav className="flex-1 py-6 space-y-1 overflow-y-auto">
+                  <SidebarItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setIsMobileMenuOpen(false);}} />
+                  <SidebarItem icon={Users} label="Students" active={activeTab === 'students'} onClick={() => {setActiveTab('students'); setIsMobileMenuOpen(false);}} />
+                  <SidebarItem icon={DollarSign} label="Fees & Payments" active={activeTab === 'fees'} onClick={() => {setActiveTab('fees'); setIsMobileMenuOpen(false);}} />
+                  <SidebarItem icon={FolderOpen} label="Materials (Drive)" active={activeTab === 'materials'} onClick={() => {setActiveTab('materials'); setIsMobileMenuOpen(false);}} />
+                  <div className="pt-6 mt-6 border-t border-gray-100">
+                     <SidebarItem icon={Settings} label="Platform Settings" active={activeTab === 'settings'} onClick={() => {setActiveTab('settings'); setIsMobileMenuOpen(false);}} />
+                  </div>
+                </nav>
+
+                <div className="p-4 bg-white border-t border-gray-100">
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <p className="text-xs text-blue-600 font-semibold mb-1">DATA SYNC</p>
+                    <p className="text-xs text-blue-800 mb-3">
+                      Connected to Drive:
+                      <br/>
+                      <span className="font-mono">All-A_Master_Sheet</span>
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      Live
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+              {/* Header */}
+              <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-10 relative">
+                <button 
+                  className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg active:bg-gray-200 transition" 
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  aria-label="Open Menu"
+                >
+                  <MenuIcon size={24} />
+                </button>
+                
+                <div className="flex-1 max-w-xl mx-auto px-4 hidden sm:block">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Search students, receipts, or files..." 
+                      className="w-full bg-gray-100 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-shadow"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition">
+                    <Bell size={20} />
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                  </button>
+                  <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
+                    D
+                  </div>
+                </div>
+              </header>
+
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 sm:pb-6">
+                {renderContent()}
+              </div>
+            </main>
+          </div>
+        );
+      }
+
+      // --- RENDER THE APP ---
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<TuitionManager />);
+    </script>
+  </body>
+</html>
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+module.exports = {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+module.exports = {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}`
+cd frontend
+npm run dev
+    );
+    

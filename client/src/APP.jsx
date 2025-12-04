@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, Users, FileText, FolderOpen, DollarSign, 
-  Settings, Plus, Search, Bell, Menu, X, ExternalLink, 
-  RefreshCw, Download 
-} from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, Menu, X, RefreshCw } from 'lucide-react';
 import './APP.css';
 
-// --- MOCK DATA (Fallback for when server is offline) ---
+// Copy of root component adapted to client
+// (unchanged logic; uses fetch to http://localhost:3001/api/dashboard)
+
 const MOCK_STUDENTS = [
   { id: 'S001', name: 'Ali bin Abu', level: 'Form 5', subject: 'SPM Add Maths', status: 'Active', phone: '+6012-3456789' },
   { id: 'S002', name: 'Sarah Lim', level: 'Year 11', subject: 'IGCSE Physics', status: 'Active', phone: '+6017-8889999' },
@@ -21,7 +19,6 @@ const MOCK_FEES = [
   { id: 'T1003', student: 'Muthu Kumar', amount: 120, date: '-', status: 'Unpaid' },
 ];
 
-// --- COMPONENTS ---
 const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
   <button 
     onClick={onClick}
@@ -71,31 +68,20 @@ export default function TuitionManager() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  
-  // Data State
   const [students, setStudents] = useState([]);
   const [fees, setFees] = useState([]);
 
-  // Fetch data from your Node.js Backend
   const refreshData = async () => {
     setIsLoading(true);
-    setIsDemoMode(false); // Reset demo mode state
+    setIsDemoMode(false);
     try {
-      // Connect to the server we built in Phase 1
       const response = await fetch('http://localhost:3001/api/dashboard');
-      
-      if (!response.ok) {
-        throw new Error('Server response was not ok');
-      }
-
+      if (!response.ok) throw new Error('Server response was not ok');
       const data = await response.json();
-      
       if (data.students) setStudents(data.students);
       if (data.fees) setFees(data.fees);
-      
     } catch (error) {
-      console.warn("Failed to connect to local server. Switching to Demo Mode.", error);
-      // Fallback to MOCK DATA if server is offline or unreachable
+      console.warn('Failed to connect to local server. Switching to Demo Mode.', error);
       setStudents(MOCK_STUDENTS);
       setFees(MOCK_FEES);
       setIsDemoMode(true);
@@ -104,9 +90,7 @@ export default function TuitionManager() {
     }
   };
 
-  useEffect(() => {
-    refreshData();
-  }, []);
+  useEffect(() => { refreshData(); }, []);
 
   const renderContent = () => {
     switch(activeTab) {
@@ -159,14 +143,11 @@ export default function TuitionManager() {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800">Welcome, Director</h2>
-            
-            {/* Show Demo Mode Warning if applicable */}
             {isDemoMode && (
               <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
                 <span className="font-bold">Note:</span> Server disconnected. Showing demo data. Ensure your Node.js backend is running on port 3001.
               </div>
             )}
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard title="Total Students" value={students.length} subtext={isDemoMode ? "Demo Mode" : "Synced from Sheets"} icon={Users} color="bg-blue-500" />
               <StatCard title="Total Fees" value={fees.length} subtext="Records found" icon={DollarSign} color="bg-green-500" />
@@ -181,7 +162,6 @@ export default function TuitionManager() {
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900">
-      {/* Sidebar */}
       <aside className={`fixed md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -195,7 +175,6 @@ export default function TuitionManager() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
           <button className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}><Menu size={24} /></button>

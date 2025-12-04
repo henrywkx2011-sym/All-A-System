@@ -2,10 +2,19 @@
   "name": "all-a-education-platform",
   "version": "0.0.0",
   "description": "Node.js backend for Tuition Management System",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "dev:all": "concurrently \"npm run dev\" \"node backend/server.js\"",
+    "validate": "node --check server.js && node --check backend/server.js",
+    "client:dev": "cd client && npm run dev",
+    "build:client": "cd client && npm run build",
+    "build": "npm run build:client",
+    "start:prod": "NODE_ENV=production node server.js",
+    "lint": "eslint \"**/*.{js,jsx}\" --max-warnings=0",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -15,6 +24,12 @@
     "google-spreadsheet": "^4.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^2.8.8",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-config-prettier": "^8.0.0"
   }
 }

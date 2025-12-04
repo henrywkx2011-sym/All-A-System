@@ -1,46 +1,33 @@
-import express, { json } from 'express';
-import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { JWT } from 'google-auth-library';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-dotenv.config();
+const express = require('express');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { JWT } = require('google-auth-library');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 
 // Allow the React frontend to communicate with this server
 app.use(cors()); 
-
-app.use(json());
+app.use(express.json());
 
 // --- CONFIGURATION ---
 // These values come from your .env file (explained in the guide)
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
-  ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
-  : null;
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
 
-// Configure Authentication (only if credentials are present)
-let serviceAccountAuth = null;
-if (SPREADSHEET_ID && SERVICE_ACCOUNT_EMAIL && PRIVATE_KEY) {
-  serviceAccountAuth = new JWT({
-    email: SERVICE_ACCOUNT_EMAIL,
-    key: PRIVATE_KEY,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-}
+// Configure Authentication
+const serviceAccountAuth = new JWT({
+  email: SERVICE_ACCOUNT_EMAIL,
+  key: PRIVATE_KEY,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
 
 // --- API ROUTES ---
 
 // 1. GET Dashboard Data
 app.get('/api/dashboard', async (req, res) => {
   try {
-    if (!serviceAccountAuth) {
-      return res.status(503).json({ error: 'Google Sheets credentials not configured' });
-    }
     const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
     await doc.loadInfo(); 
 
@@ -82,19 +69,6 @@ app.get('/api/dashboard', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-// Serve client in production if present
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-if (process.env.NODE_ENV === 'production') {
-  const clientDist = path.join(__dirname, 'client', 'dist');
-  app.use(express.static(clientDist));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
-}
-
 app.listen(PORT, () => {
-  console.log(`✅ All-A Server is running on  http://localhost:${PORT}`);
+  console.log(`✅ All-A Server is running on http://localhost:${PORT}`);
 });
-    
